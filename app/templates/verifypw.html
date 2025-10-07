@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Password</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-100">
+
+  <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Verifikasi Password</h2>
+
+    <form action="/verifypw" method="post" class="space-y-5">
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Masukkan Password Saat Ini</label>
+        <div class="relative">
+          <input type="password" id="current_password" name="current_password" required
+                 placeholder="Enter your password"
+                 class="w-full px-4 py-2 border {{ 'border-red-500' if error_message else 'border-gray-300' }} rounded-lg focus:ring-2 focus:ring-red-500 outline-none pr-12">
+          <img src="/assets/closeeyes.png" alt="toggle" id="toggle_icon"
+               class="absolute right-3 top-2.5 w-6 h-6 cursor-pointer" onclick="togglePassword()">
+        </div>
+        {% if error_message %}
+          <p class="text-sm text-red-600 mt-1">{{ error_message }}</p>
+        {% endif %}
+      </div>
+
+      <button type="submit"
+              class="w-full bg-black text-white py-2 rounded-lg hover:bg-red-600 transition">
+        Lanjutkan
+      </button>
+    </form>
+
+    <!-- Link kembali ke profil -->
+    <div class="mt-4 text-sm text-center">
+      <a href="/profile"
+         class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out">
+        &larr; Kembali ke Profil
+      </a>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const field = document.getElementById("current_password");
+      const icon = document.getElementById("toggle_icon");
+      const isHidden = field.type === "password";
+      field.type = isHidden ? "text" : "password";
+      icon.src = isHidden ? "/assets/openeyes.png" : "/assets/closeeyes.png";
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-100">
+
+  <div class="w-full max-w-6xl bg-white shadow-2xl rounded-2xl grid md:grid-cols-2 overflow-hidden">
+
+    <!-- Sisi Kiri -->
+    <div class="relative block md:h-auto h-48">
+      <img src="assets/tlkm.JPG" alt="Telkom" class="w-full h-full object-cover max-h-[650px]" />
+      <div class="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-end p-10 text-white">
+        <h2 class="text-xl md:text-3xl font-semibold mb-1 md:mb-2">Welcome!</h2>
+        <p class="text-xs md:text-sm opacity-90 mb-2 md:mb-6">
+          Manage your documents efficiently and securely with our smart system.
+        </p>
+      </div>
+    </div>
+
+    <!-- Sisi Kanan -->
+    <div class="flex flex-col justify-center px-10 py-12">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-6">Sign in to your account</h2>
+
+      <form action="/login" method="post" class="space-y-5" onsubmit="return validateCaptcha();">
+
+        <!-- Email / Username -->
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Email atau Nomor HP</label>
+          <input 
+            type="text" 
+            name="identifier" 
+            placeholder="you@example.com" 
+            value="{{ email | default('') }}"
+            class="w-full px-4 py-2 border {{ 'border-red-500' if email_error else 'border-gray-300' }} rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+            required 
+          />
+          {% if email_error %}
+            <p class="text-sm text-red-600 mt-1">{{ email_error }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="Enter your password"
+            class="w-full px-4 py-2 border {{ 'border-red-500' if password_error else 'border-gray-300' }} rounded-lg focus:ring-2 focus:ring-red-500 outline-none" 
+            required 
+          />
+          {% if password_error %}
+            <p class="text-sm text-red-600 mt-1">{{ password_error }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Show Password -->
+        <div class="flex items-center">
+          <input type="checkbox" id="showPassword" class="mr-2" onclick="togglePassword()" />
+          <label for="showPassword" class="text-sm text-gray-600">Tampilkan Password</label>
+        </div>
+
+        <!-- CAPTCHA -->
+        <div>
+          <div class="flex items-center gap-4">
+            <img src="/captcha.png" alt="captcha" id="captchaImage" class="rounded border" />
+            <button type="button" onclick="reloadCaptcha()" class="text-sm text-blue-500 hover:underline">Reload</button>
+          </div>
+          <input 
+            type="text" 
+            name="captcha_input" 
+            id="captcha_input" 
+            placeholder="Masukkan kode di gambar"
+            class="mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+            required
+          />
+          
+          <!-- password error -->
+          <div class="mt-1">
+            {% if captcha_error %}
+              <p class="text-sm text-red-600 mb-1">{{ captcha_error }}</p>
+            {% endif %}
+            <div class="flex justify-end mb-4">
+              <a href="/forgot-password" class="text-sm text-red-600 hover:underline">Forgot Password?</a>
+            </div>
+          </div>
+
+
+        <!-- Tombol Sign In -->
+        <button type="submit" id="submitBtn" class="w-full bg-black text-white py-2 rounded-lg hover:bg-red-600 transition">
+          Sign In
+        </button>
+        
+        <!-- Link Register -->
+        <div class="text-sm text-center mt-4">
+          <p class="text-gray-600">
+            Belum punya akun? <a href="/register" class="text-red-600 hover:underline">Daftar di sini</a>
+          </p>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const passwordInput = document.getElementById("password");
+      passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+    }
+
+    function reloadCaptcha() {
+      const captchaImg = document.getElementById("captchaImage");
+      captchaImg.src = "/captcha.png?" + Date.now();
+    }
+
+    function validateCaptcha() {
+      const input = document.getElementById("captcha_input").value.trim();
+      if (input === "") {
+        alert("Silakan isi captcha terlebih dahulu.");
+        return false;
+      }
+      return true;
+    }
+
+  // ================== Geolocation ==================
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      fetch("/update-location", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({latitude: pos.coords.latitude, longitude: pos.coords.longitude})
+      });
+    }, function(err) { console.log("Geolocation error:", err); });
+  }
+  </script>
+
+</body>
+</html>

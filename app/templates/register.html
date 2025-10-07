@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-100">
+
+  <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Buat Akun Baru</h2>
+
+    {% if message or error %}
+    <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm text-center">
+      {{ message or error }}
+    </div>
+    {% endif %}
+
+    <form action="/register" method="post" class="space-y-4">
+
+      <!-- Email -->
+      <div>
+        <label for="email" class="block text-sm text-gray-600 mb-1">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="you@example.com"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+          required
+        /> 
+      </div>
+
+      <!-- Nomor HP -->
+      <div>
+        <label for="phone_number" class="block text-sm text-gray-600 mb-1">Nomor HP</label>
+        <input
+          type="tel"
+          id="phone_number"
+          name="phone_number"
+          placeholder="08xxxxxxxxxx"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+          required
+        />
+      </div>
+
+      <!-- Username -->
+      <div>
+        <label for="username" class="block text-sm text-gray-600 mb-1">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          placeholder="pilih username"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+          required
+          oninput="validateUsername()"
+        />
+        <p id="usernameError" class="text-sm text-red-600 mt-1 hidden"></p>
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label for="password" class="block text-sm text-gray-600 mb-1">Password</label>
+        <div class="relative">
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="buat password yang kuat"
+            class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+            oninput="validatePassword()"
+            required
+          />
+          <img
+            src="/assets/closeeyes.png"
+            alt="toggle"
+            id="toggle_password"
+            class="absolute right-3 top-2.5 w-6 h-6 cursor-pointer"
+            onclick="togglePassword('password', 'toggle_password')"
+          />
+        </div>
+        <p id="passwordError" class="text-sm text-red-600 mt-1 hidden"></p>
+      </div>
+
+      <!-- Konfirmasi Password -->
+      <div>
+        <label for="confirm_password" class="block text-sm text-gray-600 mb-1">Konfirmasi Password</label>
+        <div class="relative">
+          <input
+            type="password"
+            id="confirm_password"
+            name="confirm_password"
+            placeholder="ulangi password"
+            class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
+            required
+          />
+          <img
+            src="/assets/closeeyes.png"
+            alt="toggle"
+            id="toggle_confirm_password"
+            class="absolute right-3 top-2.5 w-6 h-6 cursor-pointer"
+            onclick="togglePassword('confirm_password', 'toggle_confirm_password')"
+          />
+        </div>
+      </div>
+
+      <!-- Tombol Submit -->
+      <button type="submit" id="submitBtn" class="w-full bg-black text-white py-2 rounded-lg hover:bg-red-600 transition">
+        Daftar
+      </button>
+    </form>
+
+    <!-- Link ke login -->
+    <div class="text-sm text-center mt-4">
+      <p class="text-gray-600">
+        Sudah punya akun?
+        <a href="/" class="text-red-600 hover:underline">Login di sini</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Toggle Show/Hide Password + Validasi JS -->
+<script>
+  function togglePassword(fieldId, iconId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(iconId);
+    const isHidden = field.type === "password";
+    field.type = isHidden ? "text" : "password";
+    icon.src = isHidden ? "/assets/openeyes.png" : "/assets/closeeyes.png";
+  }
+
+  function validatePassword() {
+    const pwd = document.getElementById("password").value;
+    const errorEl = document.getElementById("passwordError");
+    const submitBtn = document.getElementById("submitBtn");
+    if (pwd.length < 6) {
+      errorEl.textContent = "Password minimal 6 karakter";
+      errorEl.classList.remove("hidden");
+      submitBtn.disabled = true;
+      submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+    } else {
+      errorEl.textContent = "";
+      errorEl.classList.add("hidden");
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+  }  
+
+  function validateUsername() {
+    const uname = document.getElementById("username").value;
+    const submitBtn = document.getElementById("submitBtn");
+    if (uname && uname[0] !== uname[0].toUpperCase()) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+      document.getElementById("usernameError").textContent = "Huruf pertama harus kapital";
+      document.getElementById("usernameError").classList.remove("hidden");
+    } else {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      document.getElementById("usernameError").textContent = "";
+      document.getElementById("usernameError").classList.add("hidden");
+    }
+  }
+</script>
+
+</body>
+</html>

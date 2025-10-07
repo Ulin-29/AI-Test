@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+
+  <div class="bg-white rounded-2xl shadow-md w-full max-w-md p-6">
+
+    <!-- Notifikasi -->
+    {% if message %}
+      {% if "berhasil" in message %}
+        <div class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-sm">
+          {{ message }}
+        </div>
+      {% else %}
+        <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+          {{ message }}
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- Profil Pengguna -->
+    <div class="flex flex-col items-center text-center mb-8">
+      <img 
+        src="{% if user.photo %}/assets/uploads/{{ user.photo }}{% else %}/assets/usericon.png{% endif %}" 
+        alt="Foto Profil" 
+        class="w-28 h-28 rounded-full border-4 border-white shadow-md object-cover"
+      >
+      <h2 class="text-2xl font-semibold mt-4 text-gray-800">
+        {{ user.username if user.username else 'User' }}
+      </h2>
+      <p class="text-sm text-gray-500">{{ user.email }}</p>
+    </div>
+
+    <!-- Informasi Akun -->
+    <div class="grid gap-6 mb-8">
+      <div>
+        <label class="block text-sm font-semibold">Nama</label>
+        <input 
+          type="text" 
+          value="{{ user.username if user.username else 'Belum diisi' }}" 
+          class="mt-1 w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 focus:outline-none" 
+          readonly
+        >
+      </div>
+      <div>
+        <label class="block text-sm font-semibold">Email</label>
+        <input 
+          type="email" 
+          value="{{ user.email }}" 
+          class="mt-1 w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 focus:outline-none" 
+          readonly
+        >
+      </div>
+    </div>
+
+    <!-- Menu Navigasi -->
+    <div class="border border-gray-300 rounded-xl p-5 bg-gray-50">
+      <div class="flex justify-center space-x-20 items-center">
+        <a href="/home" title="Beranda">
+          <img src="assets/hm.png" alt="Beranda" class="w-6 h-6 hover:scale-110 transition">
+        </a>
+        <a href="/edit-profile" title="Edit Profil">
+          <img src="assets/pen.png" alt="Edit Profil" class="w-6 h-6 hover:scale-110 transition">
+        </a>
+        <a href="/verifypw" title="Ganti Password">
+          <img src="assets/pw.png" alt="Ganti Password" class="w-7 h-7 hover:scale-110 transition">
+        </a>
+      </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Pustaka Inti untuk FastAPI & Web Server 
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+starlette
+
+# Pustaka untuk Database & Otentikasi
+SQLAlchemy
+passlib[bcrypt]
+python-dotenv
+captcha
+user-agents
+requests
+
+# Pustaka untuk AI & Pemrosesan Data
+tensorflow
+scikit-learn
+pandas
+numpy
+pymupdf
+opencv-python
+easyocr
+torch
+torchvision
+torchaudio
+rapidfuzz
+python-Levenshtein
+openpyxl
+matplotlib
+tqdm
+xhtml2pdf

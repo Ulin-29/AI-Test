@@ -1,0 +1,33 @@
+# 🐍 Python & Virtual Environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 💻 Konfigurasi Editor & OS
+.vscode/
+.DS_Store
+
+# 🔒 File Rahasia & Environment
+.env
+.env.*
+
+# 🗃️ Database & Log
+database.db
+*.sqlite3
+*.log
+
+# 🤖 Data, Dataset, dan Model AI
+pdf_sources/
+dataset/
+*.keras
+*.h5
+*.pkl
+*.pt
+hasil_pelatihan.png
+
+# ⚙️ File sementara / upload
+temp_uploads/
+tmp/
+__temp__/

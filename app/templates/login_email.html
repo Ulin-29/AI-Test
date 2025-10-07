@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>{{subject}}</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 30px;">
+  <table align="center" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; border-spacing: 0;">
+    <tr>
+      <td style="background-color: #f8f8f8; text-align: center; padding: 40px 20px;">
+        <img src="https://raw.githubusercontent.com/Ulin-29/email-assets/refs/heads/main/Logo.png" alt="Logo" width="150" />
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 50px 40px;">
+        <h2 style="color: #333; margin-top: 0; margin-bottom: 30px;">{{title}}</h2>
+        <p style="font-size: 16px; color: #555; line-height: 1.7em; margin-top: 0; margin-bottom: 40px;">
+          {{message}}
+        </p>
+        <table style="width: 100%; font-size: 14px; color: #555; margin-top: 20px;">
+          {% if device_name %}
+          <tr>
+            <td style="padding: 12px 0; width: 100px;">📱 Perangkat:</td>
+            <td style="padding: 12px 0;">{{device_name}}</td>
+          </tr>
+          {% endif %}
+          {% if waktu_login %}
+          <tr>
+            <td style="padding: 12px 0;">⏰ Waktu:</td>
+            <td style="padding: 12px 0;">{{waktu_login}}</td>
+          </tr>
+          {% endif %}
+          {% if lokasi %}
+          <tr>
+            <td style="padding: 12px 0;">📍 Lokasi:</td>
+            <td style="padding: 12px 0;">{{lokasi}}</td>
+          </tr>
+          {% endif %}
+        </table>
+        <p style="margin-top: 50px; font-size: 14px; color: #999; line-height: 1.6em;">
+          {{footer}}
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="height: 30px; background-color: #f4f4f4;"></td>
+    </tr>
+  </table>
+</body>
+</html>

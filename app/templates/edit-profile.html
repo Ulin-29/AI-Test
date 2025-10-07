@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit Profil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center px-4">
+
+  <form 
+    action="/update-profile" 
+    method="POST" 
+    enctype="multipart/form-data" 
+    class="bg-white rounded-2xl shadow-md w-full max-w-md p-6 space-y-6"
+  >
+    <div class="text-center">
+      <h2 class="text-xl font-semibold text-gray-700">Edit Profil</h2>
+      {% if message %}
+        {% if "berhasil" in message %}
+          <p class="text-green-500 text-sm mt-2">{{ message }}</p>
+        {% else %}
+          <p class="text-red-500 text-sm mt-2">{{ message }}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="relative w-24 h-24 mx-auto">
+      <img 
+        id="avatarPreview" 
+        src="{% if user.photo %}/assets/uploads/{{ user.photo }}{% else %}/assets/usericon.png{% endif %}" 
+        alt="Foto Profil" 
+        class="w-24 h-24 rounded-full object-cover border border-gray-300 shadow"
+      />
+      
+      <label 
+        for="photo" 
+        class="absolute bottom-0 right-0 bg-white rounded-full p-1 shadow cursor-pointer hover:bg-gray-100 transition"
+      >
+        <img src="/assets/camera.png" alt="Edit" class="w-5 h-5" />
+      </label>
+      
+      {% if user.photo %}
+      <button 
+        type="button"
+        onclick="deletePhoto()"
+        class="absolute top-0 left-0 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow transition"
+        title="Hapus foto profil"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      {% endif %}
+      
+      <input 
+        type="file" 
+        name="photo" 
+        id="photo" 
+        accept="image/*" 
+        class="hidden" 
+        onchange="previewAvatar(this)"
+      />
+    </div>
+    
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Username</label>
+      <input
+        type="text"
+        name="username"
+        value="{{ user.username if user.username else '' }}"
+        class="mt-1 w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 focus:outline-none"
+        required
+        oninput="validateUsernameEdit()"
+      />
+      <p id="usernameErrorEdit" class="text-sm text-red-600 mt-1 hidden"></p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-700">Email</label>
+      <input
+        type="email"
+        name="email"
+        value="{{ user.email }}"
+        class="mt-1 w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-200 focus:outline-none"
+        required
+      />
+    </div>
+
+    <div class="flex justify-between items-center">
+      <a 
+        href="/profile" 
+        title="Batal" 
+        class="transform transition-transform duration-200 hover:scale-110"
+      >
+        <img src="assets/arrow.png" alt="Batal" class="w-6 h-6" />
+      </a>
+      <button 
+        type="submit" 
+        class="bg-black text-white px-4 py-2 rounded-lg hover:bg-red-600 text-sm font-medium"
+      >
+        Simpan
+      </button>
+    </div>
+  </form>
+
+  <script>
+    function previewAvatar(input) {
+      const preview = document.getElementById('avatarPreview');
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          preview.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function deletePhoto() {
+      if (confirm('Apakah Anda yakin ingin menghapus foto profil?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/delete-photo';
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+
+    function validateUsernameEdit() {
+      const uname = document.querySelector('input[name="username"]').value;
+      const submitBtn = document.querySelector('button[type="submit"]');
+      const errEl = document.getElementById("usernameErrorEdit");
+      if (uname && uname[0] !== uname[0].toUpperCase()) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+        errEl.textContent = "Huruf pertama harus kapital";
+        errEl.classList.remove("hidden");
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        errEl.textContent = "";
+        errEl.classList.add("hidden");
+      }
+    }
+  </script>
+  
+</body>
+</html>

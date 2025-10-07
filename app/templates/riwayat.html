@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Riwayat Verifikasi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <header class="fixed top-0 left-0 right-0 h-[90px] bg-white border-b border-gray-200 z-50">
+    <div class="flex items-center h-full px-6">
+      <img src="/assets/Logo.png" class="h-11 w-auto scale-[1.7] object-contain relative top-[-12px] ml-8" alt="Logo Telkom" />
+    </div>
+    <div class="absolute top-4 right-9">
+      <button id="profileBtn" class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none shadow-lg">
+        <img src="{% if user.photo and user.photo != 'default.png' %}/assets/uploads/{{ user.photo }}{% else %}/assets/usericon.png{% endif %}" class="w-11 h-11 rounded-full object-cover shadow-md ring-2 ring-white" />
+      </button>
+      <div id="profileMenu" class="hidden absolute right-0 mt-4 w-52 bg-white text-gray-800 rounded-lg shadow-lg py-2 text-sm">
+        <a href="/home" class="flex items-center px-4 py-2 hover:text-blue-600"><img src="/assets/beranda.png" alt="Beranda" class="w-5 h-5 mr-3" />Beranda</a>
+        <a href="/profile" class="flex items-center px-4 py-2 hover:text-blue-600"><img src="/assets/profilsaya.png" alt="Profil" class="w-5 h-5 mr-3" />Profil Saya</a>
+        <a href="/logout" class="flex items-center px-4 py-2 text-red-500 hover:text-red-700"><img src="/assets/logout.png" alt="Logout" class="w-5 h-5 mr-3" />Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <aside id="sidebar" class="fixed top-[90px] bottom-0 left-0 w-20 md:w-40 bg-white shadow-md flex flex-col items-center py-6 space-y-10 z-40 transform transition-transform duration-300 md:translate-x-0 -translate-x-full">
+    <nav class="flex flex-col items-center w-full px-2 space-y-6">
+      <a href="/home" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50"><img src="/assets/home.png" class="w-7 h-7 mb-1" alt="Home" /><span class="text-xs md:text-sm font-medium">Home</span></a>
+      <a href="/verifikasi" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50"><img src="/assets/verif.png" class="w-7 h-7 mb-1" alt="Verifikasi" /><span class="text-xs md:text-sm font-medium">Verifikasi</span></a>
+      <a href="/riwayat" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full bg-red-50 font-bold"><img src="/assets/history.png" class="w-7 h-7 mb-1" alt="Riwayat" /><span class="text-xs md:text-sm font-medium">Riwayat</span></a>
+    </nav>
+  </aside>
+
+  <div id="mainContent" class="pt-[90px] md:pl-40 transition-all duration-300">
+    <main class="flex-1 pt-0 px-2 md:p-8 overflow-y-auto">
+      <section class="bg-white rounded-2xl shadow-md p-4 md:p-8 max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-red-600 mb-8">Riwayat Verifikasi Dokumen</h1>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto border border-gray-200 rounded-lg">
+            <thead class="bg-gray-100 text-gray-700">
+              <tr>
+                <th class="px-4 py-3 text-left">No</th>
+                <th class="px-4 py-3 text-left">Nama Dokumen</th>
+                <th class="px-4 py-3 text-left">Tanggal</th>
+                <th class="px-4 py-3 text-left">Status</th>
+                <th class="px-4 py-3 text-left">Skor</th>
+                <th class="px-4 py-3 text-left">Detail</th>
+                <th class="px-4 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="riwayat-tbody" class="bg-white text-sm">
+              {% for riwayat in riwayat_list %}
+              <tr class="border-b">
+                <td class="px-4 py-3">{{ loop.index }}</td>
+                <td class="px-4 py-3 font-medium">{{ riwayat.nama_dokumen }}</td>
+                <td class="px-4 py-3">{{ riwayat.timestamp.strftime('%Y-%m-%d') }}</td>
+                <td class="px-4 py-3">
+                  {% if riwayat.status == "DITERIMA" %}<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-semibold">DITERIMA</span>{% else %}<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-semibold">DITOLAK</span>{% endif %}
+                </td>
+                <td class="px-4 py-3 font-semibold">{{ riwayat.skor }}%</td>
+                <td class="px-4 py-3">
+                  <button data-id="{{ riwayat.id }}" class="open-detail-modal bg-gray-200 text-gray-700 hover:bg-gray-300 text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    Lihat Selengkapnya &gt;
+                  </button>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <form action="/hapus-dokumen/{{ riwayat.id }}" method="post" onsubmit="return confirm('Anda yakin ingin menghapus dokumen ini secara permanen?');">
+                    <button type="submit" class="flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600 text-xs font-semibold px-4 py-2 rounded-lg transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m3.5-.029h.001l.001.001a.5.5 0 0 0 .998-.002L8.5 5a.5.5 0 0 0-.998.001M11.995 5.03a.5.5 0 1 0-.998-.06l-.5 8.5a.5.5 0 1 0 .998.06z"/></svg>
+                      Hapus
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="7" class="text-center py-10 text-gray-500">Belum ada riwayat verifikasi.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 hidden z-50">
+    <div class="bg-white rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center p-5 border-b">
+        <h3 class="text-xl font-bold text-red-600">Hasil Verifikasi Dokumen</h3>
+        <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto">
+        <div class="border-b border-gray-200 mb-4">
+          <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+            <button id="summaryTabBtn" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">Ringkasan Analisis</button>
+            <button id="detailTabBtn" class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">Detail Pengecekan</button>
+          </nav>
+        </div>
+        <div id="summaryContent" class="prose max-w-none"></div>
+        <div id="detailContent" class="hidden">
+          <p id="modalDocName" class="text-gray-500 mb-1 break-all"></p>
+          <p id="modalDocType" class="text-sm text-gray-500 mb-4"></p> <div id="modalStatusSkor" class="mb-6"></div>
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50 text-gray-600 text-sm">
+              <tr>
+                <th class="px-4 py-2 text-left font-semibold">No</th>
+                <th class="px-4 py-2 text-left font-semibold">Item Pemeriksaan</th>
+                <th class="px-4 py-2 text-left font-semibold">Status</th>
+                <th class="px-4 py-2 text-left font-semibold">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="modalTableBody" class="bg-white text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end p-4 bg-gray-50 border-t rounded-b-2xl">
+        <button id="downloadExcelBtn" class="bg-red-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-md hover:bg-red-700 transition">
+          Download Laporan (Excel)
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // Script Sidebar & Profile Dropdown
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    }
+    const profileBtn = document.getElementById('profileBtn');
+    const profileMenu = document.getElementById('profileMenu');
+    document.addEventListener('click', (e) => {
+        if (profileBtn.contains(e.target)) {
+            profileMenu.classList.toggle('hidden');
+        } else if (!profileMenu.contains(e.target)) {
+            profileMenu.classList.add('hidden');
+        }
+    });
+
+    // =============================================
+    //       KODE MODAL FINAL DAN LENGKAP
+    // =============================================
+    const detailModal = document.getElementById('detailModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const openModalBtns = document.querySelectorAll('.open-detail-modal');
+    const summaryTabBtn = document.getElementById('summaryTabBtn');
+    const detailTabBtn = document.getElementById('detailTabBtn');
+    const summaryContent = document.getElementById('summaryContent');
+    const detailContent = document.getElementById('detailContent');
+    const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+    let currentVerificationResults = [];
+
+    const switchTab = (activeTab) => {
+        if (activeTab === 'summary') {
+            summaryTabBtn.className = 'tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-red-500 text-red-600';
+            detailTabBtn.className = 'tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            summaryContent.classList.remove('hidden');
+            detailContent.classList.add('hidden');
+        } else {
+            detailTabBtn.className = 'tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-red-500 text-red-600';
+            summaryTabBtn.className = 'tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            detailContent.classList.remove('hidden');
+            summaryContent.classList.add('hidden');
+        }
+    };
+    summaryTabBtn.addEventListener('click', () => switchTab('summary'));
+    detailTabBtn.addEventListener('click', () => switchTab('detail'));
+
+    openModalBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const docId = btn.dataset.id;
+            switchTab('summary');
+            summaryContent.innerHTML = '<p>Memuat data...</p>';
+            document.getElementById('modalTableBody').innerHTML = '';
+            detailModal.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`/api/riwayat/${docId}`);
+                if (!response.ok) throw new Error('Gagal mengambil data');
+                const data = await response.json();
+                
+                currentVerificationResults = data.hasil_verifikasi || [];
+
+                // Mengonversi teks ringkasan menjadi HTML
+                const summaryText = data.ringkasan ? data.ringkasan : 'Tidak ada ringkasan.';
+                let summaryHtml = '';
+                let inList = false;
+                summaryText.split('\n').forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('* ')) {
+                        if (inList) { summaryHtml += '</ul>'; inList = false; }
+                        summaryHtml += `<h3 class="font-bold text-lg text-gray-800 mt-4 mb-2">${trimmedLine.substring(2)}</h3>`;
+                    } else if (trimmedLine.startsWith('- ')) {
+                        if (!inList) { summaryHtml += '<ul class="list-disc pl-5 space-y-1">'; inList = true; }
+                        summaryHtml += `<li class="text-gray-600">${trimmedLine.substring(2)}</li>`;
+                    } else if (trimmedLine.length > 0) {
+                        if (inList) { summaryHtml += '</ul>'; inList = false; }
+                        summaryHtml += `<p class="text-gray-700">${trimmedLine}</p>`;
+                    }
+                });
+                if (inList) { summaryHtml += '</ul>'; }
+                summaryContent.innerHTML = summaryHtml;
+                
+                // Mengisi Konten Detail Pengecekan
+                document.getElementById('modalDocName').innerHTML = `Dokumen: <span class="font-medium text-gray-700">${data.nama_dokumen}</span>`;
+                document.getElementById('modalDocType').innerHTML = `Tipe Verifikasi: <span class="font-medium text-gray-700">${data.tipe_dokumen}</span>`;
+                const statusBadge = data.status === "DITERIMA" 
+                    ? `<span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-semibold">DITERIMA</span>`
+                    : `<span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-semibold">DITOLAK</span>`;
+                document.getElementById('modalStatusSkor').innerHTML = `Skor Kelengkapan: <span class="font-bold">${data.skor}%</span> <span class="ml-2">${statusBadge}</span>`;
+                
+                let tableRows = '';
+                if(data.hasil_verifikasi && data.hasil_verifikasi.length > 0) {
+                    data.hasil_verifikasi.forEach((item, index) => {
+                        let statusHtml = '';
+                        if (item.status === 'OK') {
+                            statusHtml = `<span class="flex items-center gap-1.5 text-green-600 font-semibold"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg> OK</span>`;
+                        } else {
+                            statusHtml = `<span class="flex items-center gap-1.5 text-red-600 font-semibold"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293z"/></svg> TIDAK OK</span>`;
+                        }
+                        tableRows += `<tr class="border-b"><td class="px-4 py-3">${index + 1}</td><td class="px-4 py-3 font-medium">${item.name}</td><td class="px-4 py-3">${statusHtml}</td><td class="px-4 py-3 text-gray-600">${item.keterangan}</td></tr>`;
+                    });
+                } else {
+                    tableRows = '<tr><td colspan="4" class="text-center py-8">Tidak ada data detail.</td></tr>';
+                }
+                document.getElementById('modalTableBody').innerHTML = tableRows;
+
+            } catch (error) {
+                summaryContent.innerHTML = `<p class="text-red-500">Gagal memuat data. Silakan coba lagi.</p>`;
+                console.error('Error fetching details:', error);
+            }
+        });
+    });
+
+    downloadExcelBtn.addEventListener('click', async () => {
+        if (currentVerificationResults.length === 0) {
+            alert("Tidak ada data untuk di-download.");
+            return;
+        }
+        try {
+            const response = await fetch('/download-excel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(currentVerificationResults)
+            });
+            if (!response.ok) throw new Error('Gagal men-download file.');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = "laporan_verifikasi.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } catch (error) {
+            console.error('Error downloading Excel file:', error);
+            alert('Terjadi kesalahan saat mencoba men-download file.');
+        }
+    });
+
+    const closeModal = () => detailModal.classList.add('hidden');
+    closeModalBtn.addEventListener('click', closeModal);
+    detailModal.addEventListener('click', (e) => {
+        if (e.target === detailModal) closeModal();
+    });
+</script>
+
+</body>
+</html>

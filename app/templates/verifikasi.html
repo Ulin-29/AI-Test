@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Verifikasi Dokumen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="fixed top-4 right-9 z-50">
+        <div class="relative">
+            <button id="profileBtn" class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none shadow-lg">
+                <img src="{% if user.photo %}/assets/uploads/{{ user.photo }}{% else %}/assets/usericon.png{% endif %}" class="w-11 h-11 rounded-full object-cover shadow-md ring-2 ring-white">
+            </button>
+            <div id="profileMenu" class="hidden absolute right-0 mt-7 w-52 bg-white text-gray-800 rounded-lg shadow-lg py-2 text-sm transition-all duration-200 ease-out origin-top-right z-40">
+                <a href="/home" class="flex items-center px-4 py-2 text-gray-800 hover:text-blue-600">
+                    <img src="assets/beranda.png" alt="Beranda" class="w-5 h-5 mr-3" />Beranda
+                </a>
+                <a href="/profile" class="flex items-center px-4 py-2 text-gray-800 hover:text-blue-600">
+                    <img src="assets/profilsaya.png" alt="Profil" class="w-5 h-5 mr-3" />Profil Saya
+                </a>
+                <a href="/logout" class="flex items-center px-4 py-2 text-red-500 hover:text-red-700">
+                    <img src="assets/logout.png" alt="Logout" class="w-5 h-5 mr-3" />Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <header class="top-0 z-50 bg-white border-b border-gray-200 w-full h-[90px] flex justify-between items-center px-6 py-3 ">
+        <div class="flex items-center h-10">
+            <img src="assets/Logo.png" class="h-11 w-auto scale-[1.7] object-contain relative top-[-12px] ml-8" alt="Logo Telkom" />
+        </div>
+    </header>
+
+    <div class="flex h-[calc(100vh-90px)]">
+        <aside id="sidebar"
+              class="w-20 md:w-40 bg-white shadow-md flex flex-col items-center py-6 space-y-10
+                     fixed md:static left-0 top-[90px] h-[calc(100vh-90px)] transform -translate-x-full md:translate-x-0
+                     transition-transform duration-300 ease-in-out z-40">
+            <nav class="flex flex-col items-center w-full px-2 space-y-6">
+                <a href="/home" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50">
+                    <img src="assets/home.png" class="w-7 h-7 mb-1" alt="Home">
+                    <span class="text-xs md:text-sm font-medium">Home</span>
+                </a>
+                <a href="/verifikasi" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50">
+                    <img src="assets/verif.png" class="w-7 h-7 mb-1" alt="Verifikasi">
+                    <span class="text-xs md:text-sm font-medium">Verifikasi</span>
+                </a>
+                <a href="/riwayat" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50">
+                    <img src="assets/history.png" class="w-7 h-7 mb-1" alt="Riwayat">
+                    <span class="text-xs md:text-sm font-medium">Riwayat</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div id="mainWrapper" class="flex-1 flex flex-col transition-all duration-300">
+            <div class="px-4 bg-gray-100 md:hidden">
+                <button id="hamburgerBtn" class="p-2 rounded-lg bg-gray-100 ">
+                    <img id="hamburgerIcon" src="assets/right.png" alt="Menu" class="w-6 h-6">
+                </button>
+            </div>
+            
+            <main id="mainContent" class="flex-1 pt-0 px-2 md:p-8 overflow-y-auto">
+                <section id="upload-section" class="bg-white rounded-2xl shadow-md p-4 md:p-8 max-w-4xl mx-auto">
+                    <h1 class="text-2xl md:text-3xl font-bold text-red-600 mb-6">Verifikasi Dokumen Proyek</h1>
+                    <form id="verificationForm" method="post" enctype="multipart/form-data">
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-medium mb-2">Pilih Jenis Verifikasi</label>
+                            <select name="doc_type" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
+                                <option value="" disabled selected>Pilih Jenis Checklist...</option>
+                                <option value="VERIFIKASI_BAUT">Verifikasi BAUT (Uji Terima)</option>
+                                <option value="VERIFIKASI_BACT">Verifikasi BACT (Commissioning Test)</option>
+                            </select>
+                        </div>
+                        <div class="mb-8">
+                            <label class="block text-gray-700 font-medium mb-2">Unggah Dokumen PDF</label>
+                            <div class="border border-gray-400 rounded-md p-3 w-full md:w-72">
+                                <label for="fileInput" class="group rounded-md px-8 py-6 flex flex-col items-center justify-center text-center cursor-pointer">
+                                    <p id="fileNameDisplay" class="text-gray-600 mb-4">Klik atau seret file ke sini</p>
+                                    <div class="w-14 h-14 flex items-center justify-center mb-3 transition-transform duration-300 group-hover:-translate-y-1">
+                                        <img src="assets/upload.png" alt="Ikon Unggah" class="w-14 h-14 rounded-full" />
+                                    </div>
+                                    <p class="text-gray-500 text-sm mt-1">PDF max 200MB</p>
+                                    <input type="file" name="file" class="hidden" id="fileInput" required/>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex justify-center md:justify-end">
+                            <button type="submit" class="bg-red-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-red-700 transition">Mulai Verifikasi</button>
+                        </div>
+                    </form>
+                </section>
+
+                <div id="progress-container" class="max-w-4xl mx-auto mt-6 hidden">
+                    <div class="bg-white p-4 rounded-lg shadow-md text-center">
+                        <p id="progress-message" class="text-gray-700 font-medium">Memulai verifikasi...</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                            <div id="progress-bar" class="bg-red-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="result-wrapper" class="hidden">
+                    <section id="ringkasan-analisis" class="bg-white rounded-2xl shadow-md p-8 max-w-4xl mx-auto mt-10">
+                        <h2 class="text-2xl font-bold text-red-600 mb-6">Ringkasan Hasil Analisis</h2>
+                        <div id="summary-content" class="text-gray-700"></div>
+                    </section>
+                
+                    <section id="laporan-detail" class="bg-white rounded-2xl shadow-md p-8 max-w-4xl mx-auto mt-10">
+                        <h2 class="text-2xl font-bold text-red-600 mb-4">Laporan Detail Kelengkapan</h2>
+                        <p class="mb-6 text-gray-600">Dokumen: <span id="result-doc-name" class="font-semibold"></span></p>
+                
+                        <div class="grid md:grid-cols-2 gap-6 items-center bg-gray-50 p-6 rounded-lg mb-8">
+                            <div>
+                                <p class="text-sm text-gray-500">Skor Kelengkapan</p>
+                                <p id="result-score" class="text-5xl font-bold"></p>
+                                <p id="result-level" class="text-sm font-medium mt-1"></p>
+                            </div>
+                            <p class="text-gray-700">
+                                Skor ini merepresentasikan persentase kelengkapan dokumen berdasarkan item yang berhasil ditemukan oleh sistem.
+                            </p>
+                        </div>
+                
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Detail Pengecekan</h3>
+                        <div class="overflow-x-auto border rounded-lg">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th rowspan="2" class="text-center py-2 px-4 text-sm font-medium text-gray-600 w-12">NO</th>
+                                        <th rowspan="2" class="text-left py-2 px-4 text-sm font-medium text-gray-600">ITEM YANG DI PERIKSA</th>
+                                        <th colspan="2" class="text-center py-2 px-4 text-sm font-medium text-gray-600">STATUS</th>
+                                        <th rowspan="2" class="text-left py-2 px-4 text-sm font-medium text-gray-600">KETERANGAN</th>
+                                    </tr>
+                                    <tr>
+                                        <th class="text-center py-2 px-4 text-sm font-medium text-gray-600 w-16">OK</th>
+                                        <th class="text-center py-2 px-4 text-sm font-medium text-gray-600 w-16">NOK</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="result-table-body" class="bg-white"></tbody>
+                            </table>
+                        </div>
+                
+                        <div class="flex justify-center mt-8">
+                            <button id="downloadBtn" class="bg-red-600 text-white text-sm font-semibold px-6 py-3 rounded-xl shadow-md hover:bg-red-700 transition whitespace-nowrap">
+                                Download Laporan Sebagai Excel
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Referensi Elemen UI ---
+            const verificationForm = document.getElementById('verificationForm');
+            const submitButton = verificationForm.querySelector('button[type="submit"]');
+            const docTypeSelect = document.querySelector('select[name="doc_type"]');
+            const fileInput = document.getElementById('fileInput');
+            const fileInputLabel = document.querySelector('label[for="fileInput"]');
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const progressContainer = document.getElementById('progress-container');
+            const progressMessage = document.getElementById('progress-message');
+            const progressBar = document.getElementById('progress-bar');
+            const resultWrapper = document.getElementById('result-wrapper');
+            const summaryContent = document.getElementById('summary-content');
+            const resultDocName = document.getElementById('result-doc-name');
+            const resultScore = document.getElementById('result-score');
+            const resultLevel = document.getElementById('result-level');
+            const resultTableBody = document.getElementById('result-table-body');
+            const downloadButton = document.getElementById('downloadBtn');
+            let lastResultsData = [];
+
+            // --- Fungsi untuk Mengatur Status Input File ---
+            function setFileInputState(disabled) {
+                fileInput.disabled = disabled;
+                fileInputLabel.classList.toggle('cursor-not-allowed', disabled);
+                fileInputLabel.classList.toggle('opacity-50', disabled);
+            }
+
+            setFileInputState(true); // Non-aktifkan input file saat halaman dimuat
+
+            // --- Event listener untuk dropdown jenis verifikasi ---
+            docTypeSelect.addEventListener('change', function() {
+                setFileInputState(!this.value); // Aktifkan jika ada value, non-aktifkan jika tidak
+            });
+            
+            // --- Event Listener untuk Form Submission ---
+            verificationForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!fileInput.files[0] || !docTypeSelect.value) {
+                    alert("Harap pilih jenis verifikasi dan unggah file PDF.");
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sedang Memproses...`;
+                progressContainer.classList.remove('hidden');
+                resultWrapper.classList.add('hidden');
+                progressBar.style.width = '0%';
+                progressBar.style.backgroundColor = '#DC2626';
+                progressMessage.textContent = 'Mengunggah dokumen...';
+
+                const formData = new FormData(verificationForm);
+                
+                const eventSource = new EventSource(`/verify-stream?doc_type=${encodeURIComponent(docTypeSelect.value)}&file_path=${encodeURIComponent(fileInput.files[0].name)}`);
+                const response = await fetch('/verify-stream', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n\n').filter(line => line.trim() !== '');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            try {
+                                const data = JSON.parse(line.substring(5));
+                                if (data.status === 'processing') {
+                                    progressMessage.textContent = data.message;
+                                    progressBar.style.width = `${data.progress}%`;
+                                } else if (data.status === 'done') {
+                                    displayResults(data.data, fileInput.files[0].name);
+                                    progressMessage.textContent = 'Verifikasi Selesai!';
+                                    progressBar.style.width = '100%';
+                                } else if (data.status === 'error') {
+                                    progressMessage.textContent = `Error: ${data.message}`;
+                                    progressBar.style.backgroundColor = '#EF4444';
+                                    break; // Stop processing on error
+                                }
+                            } catch (error) {
+                                console.error("Gagal parse data JSON:", error, "Data:", line);
+                            }
+                        }
+                    }
+                }
+                
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Mulai Verifikasi';
+            });
+
+            // --- Fungsi untuk menampilkan hasil ---
+            function displayResults(data, fileName) {
+                lastResultsData = data.results;
+                resultWrapper.classList.remove('hidden');
+                
+                summaryContent.innerHTML = data.summary;
+                
+                resultDocName.textContent = fileName;
+                resultScore.textContent = `${data.score.toFixed(2)}%`;
+                
+                const isGoodScore = data.score >= 70;
+                resultLevel.textContent = isGoodScore ? "Baik" : "Perlu Diperiksa";
+                
+                resultScore.className = `text-5xl font-bold ${isGoodScore ? 'text-green-500' : 'text-red-500'}`;
+                resultLevel.className = `text-sm font-medium mt-1 ${isGoodScore ? 'text-green-600' : 'text-red-600'}`;
+
+                resultTableBody.innerHTML = '';
+                data.results.forEach((detail, index) => {
+                    const isOk = detail.status === 'OK';
+                    const okTick = isOk ? '✔' : '';
+                    const nokTick = !isOk ? '✔' : '';
+                    const row = `
+                        <tr class="border-t">
+                            <td class="py-2 px-4 text-sm text-gray-700 text-center">${index + 1}</td>
+                            <td class="py-2 px-4 text-sm text-gray-700">${detail.name}</td>
+                            <td class="py-2 px-4 text-green-500 font-semibold text-center">${okTick}</td>
+                            <td class="py-2 px-4 text-red-500 font-semibold text-center">${nokTick}</td>
+                            <td class="py-2 px-4 text-sm text-gray-700">${detail.keterangan || ''}</td>
+                        </tr>
+                    `;
+                    resultTableBody.innerHTML += row;
+                });
+            }
+            
+            // --- Logika untuk tombol download ---
+            downloadButton.addEventListener('click', async () => {
+                if (lastResultsData.length === 0) {
+                    alert("Tidak ada data untuk diunduh. Lakukan verifikasi terlebih dahulu.");
+                    return;
+                }
+                downloadButton.disabled = true;
+                downloadButton.textContent = 'Membuat file...';
+
+                try {
+                    const response = await fetch('/download-excel', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(lastResultsData),
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.style.display = 'none';
+                        a.href = url;
+                        a.download = 'laporan_verifikasi.xlsx';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } else {
+                        alert("Gagal mengunduh laporan.");
+                    }
+                } catch (error) {
+                    console.error('Error downloading file:', error);
+                    alert('Terjadi kesalahan saat mengunduh file.');
+                } finally {
+                    downloadButton.disabled = false;
+                    downloadButton.textContent = 'Download Laporan Sebagai Excel';
+                }
+            });
+
+            // --- Logika UI Interaktif Lainnya ---
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('bg-red-50', 'font-bold');
+                }
+            });
+
+            fileInput.addEventListener('change', function() {
+                fileNameDisplay.textContent = this.files.length > 0 ? `✅ ${this.files[0].name}` : 'Klik atau seret file ke sini';
+            });
+            
+            const toggleBtn = document.getElementById('hamburgerBtn');
+            const sidebar = document.getElementById('sidebar');
+            const hamburgerIcon = document.getElementById('hamburgerIcon');
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                hamburgerIcon.src = sidebar.classList.contains('-translate-x-full') ? "assets/right.png" : "assets/left.png";
+            });
+
+            const profileBtn = document.getElementById('profileBtn');
+            const profileMenu = document.getElementById('profileMenu');
+            profileBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                profileMenu.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => {
+                if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+                    profileMenu.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -33,6 +33,13 @@
   </aside>
 
   <div id="mainContent" class="pt-[90px] md:pl-40 transition-all duration-300">
+
+    <div class="px-4 py-2 md:hidden">
+      <button id="hamburgerBtn" class="p-2 rounded-lg bg-gray-100">
+        <img id="hamburgerIcon" src="/assets/right.png" alt="Menu" class="w-6 h-6">
+      </button>
+    </div>
+
     <main class="flex-1 pt-0 px-2 md:p-8 overflow-y-auto">
       <section class="bg-white rounded-2xl shadow-md p-4 md:p-8 max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-red-600 mb-8">Riwayat Verifikasi Dokumen</h1>
@@ -45,7 +52,7 @@
                 <th class="px-4 py-3 text-left">Tanggal</th>
                 <th class="px-4 py-3 text-left">Status</th>
                 <th class="px-4 py-3 text-left">Skor</th>
-                <th class="px-4 py-3 text-left">Detail</th>
+                <th class="px-4 py-3 text-center">Detail</th>
                 <th class="px-4 py-3 text-center">Aksi</th>
               </tr>
             </thead>
@@ -67,7 +74,7 @@
                 <td class="px-4 py-3 text-center">
                   <form action="/hapus-dokumen/{{ riwayat.id }}" method="post" onsubmit="return confirm('Anda yakin ingin menghapus dokumen ini secara permanen?');">
                     <button type="submit" class="flex items-center justify-center gap-2 bg-red-500 text-white hover:bg-red-600 text-xs font-semibold px-4 py-2 rounded-lg transition">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m3.5-.029h.001l.001.001a.5.5 0 0 0 .998-.002L8.5 5a.5.5 0 0 0-.998.001M11.995 5.03a.5.5 0 1 0-.998-.06l-.5 8.5a.5.5 0 1 0 .998.06z"/></svg>
+                      <img src="/assets/trash.png" alt="Hapus" class="w-2.5 h-3.5">
                       Hapus
                     </button>
                   </form>
@@ -127,11 +134,28 @@
     // Script Sidebar & Profile Dropdown
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent'); // <-- Ambil elemen mainContent
+    const hamburgerIcon = document.getElementById('hamburgerIcon'); // <-- Ambil elemen ikon
+
     if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+        hamburgerBtn.addEventListener('click', () => {
+            // 1. Tampilkan atau sembunyikan sidebar
+            sidebar.classList.toggle('-translate-x-full');
+
+            // 2. Dorong atau kembalikan konten utama
+            // Pada mobile, sidebar lebarnya w-20, jadi kita beri padding pl-20
+            mainContent.classList.toggle('pl-20'); 
+
+            // 3. Ganti ikon panah kanan/kiri (opsional tapi bagus)
+            if (hamburgerIcon) {
+                const isSidebarHidden = sidebar.classList.contains('-translate-x-full');
+                hamburgerIcon.src = isSidebarHidden ? "/assets/right.png" : "/assets/left.png";
+            }
+        });
     }
     const profileBtn = document.getElementById('profileBtn');
     const profileMenu = document.getElementById('profileMenu');
+
     document.addEventListener('click', (e) => {
         if (profileBtn.contains(e.target)) {
             profileMenu.classList.toggle('hidden');

@@ -337,8 +337,11 @@
             const toggleBtn = document.getElementById('hamburgerBtn');
             const sidebar = document.getElementById('sidebar');
             const hamburgerIcon = document.getElementById('hamburgerIcon');
+            const mainWrapper = document.getElementById('mainWrapper');
+
             toggleBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('-translate-x-full');
+                mainWrapper.classList.toggle('pl-20');
                 hamburgerIcon.src = sidebar.classList.contains('-translate-x-full') ? "assets/right.png" : "assets/left.png";
             });
 

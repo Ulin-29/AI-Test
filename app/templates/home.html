@@ -65,37 +65,41 @@
         </div>
 
         <div class="flex flex-col lg:flex-row justify-between gap-4 mt-6">
-          <div class="overflow-x-auto rounded-lg border border-gray-200 mb-6 w-full max-w-3xl">
-            <table class="w-full text-sm text-left">
-              <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
-                <tr>
-                  <th class="px-4 py-3">No</th><th class="px-4 py-3">Nama Dokumen</th><th class="px-4 py-3">Tanggal</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Skor</th>
-                </tr>
-              </thead>
-              <tbody class="text-gray-800">
-                {% for riwayat in riwayat_terbaru %}
-                <tr class="border-t hover:bg-gray-50">
-                  <td class="px-4 py-3">{{ loop.index }}</td>
-                  <td class="px-4 py-3 font-medium text-gray-900">{{ riwayat.nama_dokumen }}</td>
-                  <td class="px-4 py-3 text-gray-600">{{ riwayat.timestamp.strftime('%Y-%m-%d') }}</td>
-                  <td class="px-4 py-3">
-                    {% if riwayat.status == "DITERIMA" %}
-                      <span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-semibold">DITERIMA</span>
-                    {% else %}
-                      <span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-semibold">DITOLAK</span>
-                    {% endif %}
-                  </td>
-                  <td class="px-4 py-3 font-semibold">{{ riwayat.skor }}%</td>
-                </tr>
-                {% else %}
-                <tr>
-                  <td colspan="5" class="text-center py-10 text-gray-500">
-                    Belum ada riwayat verifikasi.
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div class="max-h-60 overflow-y-auto rounded-lg border border-gray-200 mb-6 w-full max-w-3xl">
+              <table class="w-full text-sm text-left">
+                  <thead class="bg-gray-100 text-gray-700 text-xs uppercase">
+                      <tr>
+                          <th class="sticky top-0 bg-gray-100 px-4 py-3">No</th>
+                          <th class="sticky top-0 bg-gray-100 px-4 py-3">Nama Dokumen</th>
+                          <th class="sticky top-0 bg-gray-100 px-4 py-3">Tanggal</th>
+                          <th class="sticky top-0 bg-gray-100 px-4 py-3">Status</th>
+                          <th class="sticky top-0 bg-gray-100 px-4 py-3">Skor</th>
+                      </tr>
+                  </thead>
+                  <tbody class="text-gray-800">
+                      {% for riwayat in riwayat_terbaru %}
+                      <tr class="border-t hover:bg-gray-50">
+                          <td class="px-4 py-3">{{ loop.index }}</td>
+                          <td class="px-4 py-3 font-medium text-gray-900">{{ riwayat.nama_dokumen }}</td>
+                          <td class="px-4 py-3 text-gray-600">{{ riwayat.timestamp.strftime('%Y-%m-%d') }}</td>
+                          <td class="px-4 py-3">
+                              {% if riwayat.status == "DITERIMA" %}
+                              <span class="bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-semibold">DITERIMA</span>
+                              {% else %}
+                              <span class="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-semibold">DITOLAK</span>
+                              {% endif %}
+                          </td>
+                          <td class="px-4 py-3 font-semibold">{{ riwayat.skor }}%</td>
+                      </tr>
+                      {% else %}
+                      <tr>
+                          <td colspan="5" class="text-center py-10 text-gray-500">
+                              Belum ada riwayat verifikasi.
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
           </div>
           <div class="flex justify-end lg:items-end">
             <a href="/verifikasi" class="bg-red-600 text-white text-sm font-semibold px-6 py-3 rounded-xl shadow-md hover:bg-red-700 transition whitespace-nowrap h-fit">Mulai Verifikasi Baru &gt;</a>

@@ -21,7 +21,6 @@ database.db
 # 🤖 Data, Dataset, dan Model AI
 pdf_sources/
 dataset/
-*.keras
 *.h5
 *.pkl
 *.pt

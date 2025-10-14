@@ -43,7 +43,7 @@
                     <img src="assets/home.png" class="w-7 h-7 mb-1" alt="Home">
                     <span class="text-xs md:text-sm font-medium">Home</span>
                 </a>
-                <a href="/verifikasi" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full hover:bg-red-50">
+                <a href="/verifikasi" class="sidebar-link flex flex-col items-center text-red-700 rounded-lg py-3 w-full bg-red-50 font-bold">
                     <img src="assets/verif.png" class="w-7 h-7 mb-1" alt="Verifikasi">
                     <span class="text-xs md:text-sm font-medium">Verifikasi</span>
                 </a>
@@ -82,7 +82,7 @@
                                         <img src="assets/upload.png" alt="Ikon Unggah" class="w-14 h-14 rounded-full" />
                                     </div>
                                     <p class="text-gray-500 text-sm mt-1">PDF max 200MB</p>
-                                    <input type="file" name="file" class="hidden" id="fileInput" required/>
+                                    <input type="file" name="file" class="hidden" id="fileInput" accept=".pdf" required/>
                                 </label>
                             </div>
                         </div>
@@ -98,13 +98,16 @@
                         <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                             <div id="progress-bar" class="bg-red-600 h-2.5 rounded-full" style="width: 0%"></div>
                         </div>
+                        <button id="cancelBtn" class="mt-4 bg-gray-200 text-gray-800 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-300 transition hidden">
+                            Batal
+                        </button>
                     </div>
                 </div>
 
                 <div id="result-wrapper" class="hidden">
                     <section id="ringkasan-analisis" class="bg-white rounded-2xl shadow-md p-8 max-w-4xl mx-auto mt-10">
                         <h2 class="text-2xl font-bold text-red-600 mb-6">Ringkasan Hasil Analisis</h2>
-                        <div id="summary-content" class="text-gray-700"></div>
+                        <div id="summary-content" class="prose max-w-none"></div>
                     </section>
                 
                     <section id="laporan-detail" class="bg-white rounded-2xl shadow-md p-8 max-w-4xl mx-auto mt-10">
@@ -154,7 +157,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Referensi Elemen UI ---
             const verificationForm = document.getElementById('verificationForm');
             const submitButton = verificationForm.querySelector('button[type="submit"]');
             const docTypeSelect = document.querySelector('select[name="doc_type"]');
@@ -171,26 +173,21 @@
             const resultLevel = document.getElementById('result-level');
             const resultTableBody = document.getElementById('result-table-body');
             const downloadButton = document.getElementById('downloadBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            
             let lastResultsData = [];
+            let streamReader = null;
 
-            // --- Fungsi untuk Mengatur Status Input File ---
             function setFileInputState(disabled) {
                 fileInput.disabled = disabled;
                 fileInputLabel.classList.toggle('cursor-not-allowed', disabled);
                 fileInputLabel.classList.toggle('opacity-50', disabled);
             }
-
-            setFileInputState(true); // Non-aktifkan input file saat halaman dimuat
-
-            // --- Event listener untuk dropdown jenis verifikasi ---
-            docTypeSelect.addEventListener('change', function() {
-                setFileInputState(!this.value); // Aktifkan jika ada value, non-aktifkan jika tidak
-            });
+            setFileInputState(true);
+            docTypeSelect.addEventListener('change', function() { setFileInputState(!this.value); });
             
-            // --- Event Listener untuk Form Submission ---
             verificationForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
                 if (!fileInput.files[0] || !docTypeSelect.value) {
                     alert("Harap pilih jenis verifikasi dan unggah file PDF.");
                     return;
@@ -199,32 +196,29 @@
                 submitButton.disabled = true;
                 submitButton.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Sedang Memproses...`;
                 progressContainer.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
                 resultWrapper.classList.add('hidden');
                 progressBar.style.width = '0%';
                 progressBar.style.backgroundColor = '#DC2626';
                 progressMessage.textContent = 'Mengunggah dokumen...';
 
+                const uniqueFilename = `${Date.now()}_${fileInput.files[0].name.replace(/[^a-zA-Z0-9._-]/g, '')}`;
                 const formData = new FormData(verificationForm);
-                
-                const eventSource = new EventSource(`/verify-stream?doc_type=${encodeURIComponent(docTypeSelect.value)}&file_path=${encodeURIComponent(fileInput.files[0].name)}`);
-                const response = await fetch('/verify-stream', {
-                    method: 'POST',
-                    body: formData,
-                });
+                formData.append('unique_filename', uniqueFilename);
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
+                try {
+                    const response = await fetch('/verify-stream', { method: 'POST', body: formData });
+                    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                    streamReader = response.body.getReader();
+                    const decoder = new TextDecoder();
 
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n\n').filter(line => line.trim() !== '');
-
-                    for (const line of lines) {
-                        if (line.startsWith('data:')) {
-                            try {
+                    while (true) {
+                        const { value, done } = await streamReader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value);
+                        const lines = chunk.split('\n\n').filter(line => line.trim() !== '');
+                        for (const line of lines) {
+                            if (line.startsWith('data:')) {
                                 const data = JSON.parse(line.substring(5));
                                 if (data.status === 'processing') {
                                     progressMessage.textContent = data.message;
@@ -236,69 +230,103 @@
                                 } else if (data.status === 'error') {
                                     progressMessage.textContent = `Error: ${data.message}`;
                                     progressBar.style.backgroundColor = '#EF4444';
-                                    break; // Stop processing on error
+                                    if(streamReader) await streamReader.cancel();
+                                    break;
                                 }
-                            } catch (error) {
-                                console.error("Gagal parse data JSON:", error, "Data:", line);
                             }
                         }
                     }
+                } catch (error) {
+                     if (error.name !== 'AbortError' && error.name !== 'CancelledError') {
+                        console.error('Error saat verifikasi:', error);
+                        progressMessage.textContent = 'Gagal terhubung atau proses error.';
+                        progressBar.style.backgroundColor = '#EF4444';
+                    } else {
+                        progressMessage.textContent = 'Proses verifikasi dibatalkan.';
+                    }
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Mulai Verifikasi';
+                    cancelBtn.classList.add('hidden');
+                    streamReader = null;
+                    
+                    // -- PERBAIKAN DI SINI --
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                    }, 2000);
                 }
-                
-                submitButton.disabled = false;
-                submitButton.innerHTML = 'Mulai Verifikasi';
             });
 
-            // --- Fungsi untuk menampilkan hasil ---
+            cancelBtn.addEventListener('click', async () => {
+            // Tambahkan animasi transisi halus
+            progressBar.style.transition = 'all 0.6s ease';
+            progressMessage.style.transition = 'opacity 0.6s ease';
+
+            // Langsung ubah pesan dan bar warna
+            progressMessage.textContent = '❌ Proses verifikasi dibatalkan.';
+            progressMessage.style.opacity = '1';
+            progressBar.style.backgroundColor = '#9CA3AF'; 
+            progressBar.style.width = '100%';
+
+            // Tombol Batal disembunyikan dengan fade-out juga
+            cancelBtn.style.transition = 'opacity 0.4s ease';
+            cancelBtn.style.opacity = '0';
+            setTimeout(() => cancelBtn.classList.add('hidden'), 400);
+
+            // Batalkan proses stream
+            if (streamReader) {
+                try {
+                await streamReader.cancel('Proses dibatalkan oleh pengguna.');
+                } catch (err) {
+                console.warn('Stream sudah berhenti:', err);
+                }
+            }
+
+            // Delay sedikit, lalu fade out container
+            setTimeout(() => {
+                progressContainer.style.transition = 'opacity 0.8s ease';
+                progressContainer.style.opacity = '0';
+
+                // Setelah fade out selesai, sembunyikan total
+                setTimeout(() => {
+                progressContainer.classList.add('hidden');
+                progressContainer.style.opacity = '1'; 
+                }, 800);
+            }, 1500);
+            });
+
+
             function displayResults(data, fileName) {
                 lastResultsData = data.results;
                 resultWrapper.classList.remove('hidden');
-                
-                summaryContent.innerHTML = data.summary;
-                
+                summaryContent.innerHTML = data.summary; // Menggunakan .innerHTML untuk merender HTML dari summary
                 resultDocName.textContent = fileName;
                 resultScore.textContent = `${data.score.toFixed(2)}%`;
-                
                 const isGoodScore = data.score >= 70;
                 resultLevel.textContent = isGoodScore ? "Baik" : "Perlu Diperiksa";
-                
                 resultScore.className = `text-5xl font-bold ${isGoodScore ? 'text-green-500' : 'text-red-500'}`;
                 resultLevel.className = `text-sm font-medium mt-1 ${isGoodScore ? 'text-green-600' : 'text-red-600'}`;
-
                 resultTableBody.innerHTML = '';
                 data.results.forEach((detail, index) => {
-                    const isOk = detail.status === 'OK';
-                    const okTick = isOk ? '✔' : '';
-                    const nokTick = !isOk ? '✔' : '';
-                    const row = `
-                        <tr class="border-t">
-                            <td class="py-2 px-4 text-sm text-gray-700 text-center">${index + 1}</td>
-                            <td class="py-2 px-4 text-sm text-gray-700">${detail.name}</td>
-                            <td class="py-2 px-4 text-green-500 font-semibold text-center">${okTick}</td>
-                            <td class="py-2 px-4 text-red-500 font-semibold text-center">${nokTick}</td>
-                            <td class="py-2 px-4 text-sm text-gray-700">${detail.keterangan || ''}</td>
-                        </tr>
-                    `;
-                    resultTableBody.innerHTML += row;
+                    const okTick = detail.status === 'OK' ? '✔' : '';
+                    const nokTick = detail.status !== 'OK' ? '✔' : '';
+                    resultTableBody.innerHTML += `<tr class="border-t"><td class="py-2 px-4 text-sm text-gray-700 text-center">${index + 1}</td><td class="py-2 px-4 text-sm text-gray-700">${detail.name}</td><td class="py-2 px-4 text-green-500 font-semibold text-center">${okTick}</td><td class="py-2 px-4 text-red-500 font-semibold text-center">${nokTick}</td><td class="py-2 px-4 text-sm text-gray-700">${detail.keterangan || ''}</td></tr>`;
                 });
             }
             
-            // --- Logika untuk tombol download ---
             downloadButton.addEventListener('click', async () => {
                 if (lastResultsData.length === 0) {
-                    alert("Tidak ada data untuk diunduh. Lakukan verifikasi terlebih dahulu.");
+                    alert("Tidak ada data untuk diunduh.");
                     return;
                 }
                 downloadButton.disabled = true;
                 downloadButton.textContent = 'Membuat file...';
-
                 try {
                     const response = await fetch('/download-excel', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(lastResultsData),
                     });
-
                     if (response.ok) {
                         const blob = await response.blob();
                         const url = window.URL.createObjectURL(blob);
@@ -338,7 +366,6 @@
             const sidebar = document.getElementById('sidebar');
             const hamburgerIcon = document.getElementById('hamburgerIcon');
             const mainWrapper = document.getElementById('mainWrapper');
-
             toggleBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('-translate-x-full');
                 mainWrapper.classList.toggle('pl-20');

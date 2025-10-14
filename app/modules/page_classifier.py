@@ -29,7 +29,6 @@ def classify_page_by_keywords(page_text: str) -> str:
         return "FOTO_ROLL_METER"
     if fuzzy_contains(text_norm, "survey address", threshold=80):
         return "FOTO_SURVEY_ADDRESS"
-    
     if fuzzy_contains(text_norm, "form opm", threshold=80) or fuzzy_contains(text_norm, "data pengukuran opm", threshold=80) or fuzzy_contains(text_norm, "hasil ukur opm", threshold=80):
         return "FORM_OPM"
         
@@ -68,7 +67,6 @@ def classify_page_by_keywords(page_text: str) -> str:
         return "BOQ_UT"
     if fuzzy_contains(text_norm, "otdr report") or fuzzy_contains(text_norm, "pengukuran otdr"):
         return "OTDR_REPORT"
-
     if fuzzy_contains(text_norm, "foto", threshold=75):
         return "EVIDENCE_PHOTO_UMUM"
 

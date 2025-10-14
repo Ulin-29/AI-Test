@@ -207,9 +207,11 @@ def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str)
     results.append({"name": signature_item_name, "kategori": "Validasi Akhir", "status": ttd_status, "keterangan": ttd_ket})
     return results
 
-def process_verification_stream(pdf_path: str, doc_type: str, db: Session, user_id: int, original_filename: str, unique_filename: str):
+def process_verification_stream(pdf_path: str, doc_type: str):
     if not os.path.exists(pdf_path):
-        yield {"status": "error", "message": "File tidak ditemukan"}; return
+        yield {"status": "error", "message": "File tidak ditemukan"}
+        return
+    
     temp_dir = tempfile.mkdtemp()
     try:
         yield {"status": "processing", "message": "🚀 Membuka PDF...", "progress": 0}
@@ -223,94 +225,41 @@ def process_verification_stream(pdf_path: str, doc_type: str, db: Session, user_
         doc.close()
         yield {"status": "processing", "message": "✅ PDF selesai dikonversi.", "progress": 20}
 
-        def _classify_hybrid(path_and_index):
-            path, index = path_and_index
-            
-            # 1. Dapatkan prediksi awal dari model AI (Deep Learning)
+        def _classify_hybrid(path, index):
             p_class_dl, confidence = predict_page_class(path)
-            
-            # Inisialisasi variabel untuk hasil akhir
-            text = ""
-            p_class = p_class_dl  # Keputusan sementara adalah hasil dari AI
-            p_class_kw = "-"      # Default value untuk hasil keyword
-
-            # 2. Jika confidence model AI rendah, jalankan analisis keyword
+            text, p_class, p_class_kw = "", p_class_dl, "-"
             if confidence <= 0.75:
                 text = easyocr_extract_text(path)
                 p_class_kw = classify_page_by_keywords(text)
-                # Jika keyword menemukan kelas yang valid, gunakan itu sebagai keputusan final
-                if p_class_kw != "UNKNOWN": 
-                    p_class = p_class_kw
-
-            # 3. Kembalikan semua informasi yang kita butuhkan untuk dicetak
-            return {
-                "class": p_class,           # Ini untuk 'keputusan final'
-                "ai_class": p_class_dl,       # Ini untuk 'ai ->'
-                "keyword_class": p_class_kw,  # Ini untuk 'keyword ->'
-                "path": path, 
-                "page_num": index + 1, 
-                "text": text
-            }
+                if p_class_kw != "UNKNOWN": p_class = p_class_kw
+            return {"class": p_class, "ai_class": p_class_dl, "keyword_class": p_class_kw, "path": path, "page_num": index + 1, "text": text}
 
         pages_data = []
-
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            tasks = executor.map(_classify_hybrid, zip(temp_paths, range(total_pages)))
-
-            # print log progres
-            for i, page_info in enumerate(tasks, 1):
-                pages_data.append(page_info)
-                progress = int(((i / total_pages) * 70) + 20)
-
-                # --- Cetak informasi ke terminal ---
-                print("============================")
-                print(f"Analisis Halaman {page_info['page_num']}/{total_pages}")
-                print(f"AI -> {page_info['ai_class']}")
-                print(f"Keyword -> {page_info['keyword_class']}")
-                print(f"Keputusan Final -> {page_info['class']}")
-                print("============================")
-                # -----------------------------------
-
-                yield {"status": "processing", "message": f"🤖 Menganalisis halaman {i}/{total_pages}...", "progress": progress}
+        for i, path in enumerate(temp_paths):
+            page_info = _classify_hybrid(path, i)
+            pages_data.append(page_info)
+            progress = int((((i + 1) / total_pages) * 70) + 20)
+            print(f"Analisis Halaman {page_info['page_num']}/{total_pages} -> Keputusan Final: {page_info['class']}")
+            yield {"status": "processing", "message": f"🤖 Menganalisis halaman {i + 1}/{total_pages}...", "progress": progress}
         
         yield {"status": "processing", "message": "🔍 Menyusun hasil akhir...", "progress": 95}
         results = compare_with_template_smart(pages_data, doc_type)
         all_texts = [p['text'] or easyocr_extract_text(p['path']) for p in pages_data]
         summary = generate_summary(all_texts, [p['class'] for p in pages_data])
-        
         ok = sum(1 for r in results if r["status"] == "OK")
         score = round(100 * ok / (len(results) or 1), 2)
-        level = "Good" if score >= 70 else "Perlu Diperiksa"
         
-        # MENYIMPAN HASIL KE DATABASE >>>
-        try:
-            status_dokumen = "DITERIMA" if score >= 70 else "DITOLAK"
-            dokumen_baru = models.Dokumen(
-                nama_dokumen=original_filename,
-                nama_file_unik=unique_filename,
-                tipe_dokumen=doc_type,
-                status=status_dokumen,
-                skor=int(score),
-                hasil_verifikasi=results,
-                ringkasan=summary,
-                user_id=user_id
-            )
-            db.add(dokumen_baru)
-            db.commit()
-            print(f"✅ Hasil verifikasi untuk {os.path.basename(pdf_path)} berhasil disimpan ke DB.")
-        except Exception as e:
-            print(f"❌ GAGAL menyimpan hasil ke DB: {e}")
-            db.rollback()
-        # <<< AKHIR FUNGSI BARU >>>
-
-        final_data = {"results": results, "score": score, "level": level, "summary": summary}
+        final_data = {"results": results, "score": score, "level": "Good" if score >= 70 else "Perlu Diperiksa", "summary": summary}
         yield {"status": "done", "data": final_data}
+
+    except GeneratorExit:
+        print("Generator dihentikan karena koneksi klien ditutup (dibatalkan).")
     except Exception as e:
         print(f"❌ Terjadi Error di stream: {e}")
         yield {"status": "error", "message": str(e)}
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
-
+        
 # ==============================================================================
 # BAGIAN 4: RUTE (ENDPOINT) UNTUK OTENTIKASI & PENGGUNA
 # ==============================================================================
@@ -520,7 +469,6 @@ async def process_reset_password(request: Request, new_password: str = Form(...)
 # ==============================================================================
 # BAGIAN 5: RUTE HALAMAN UTAMA (SETELAH LOGIN)
 # ==============================================================================
-# main.py
 
 @app.get("/home", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
@@ -680,21 +628,90 @@ def verifikasi_page(request: Request, user: models.User = Depends(get_current_us
     return templates.TemplateResponse("verifikasi.html", {"request": request, "user": user})
 
 @app.post("/verify-stream")
-async def verify_document_stream_endpoint(doc_type: str = Form(...), file: UploadFile = File(...), user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def verify_document_stream_endpoint(
+    request: Request,
+    doc_type: str = Form(...),
+    file: UploadFile = File(...),
+    unique_filename: str = Form(...),
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     if not user: raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Pindahkan file yang diupload ke direktori permanen
-    unique_filename = f"{uuid.uuid4()}_{os.path.basename(file.filename)}"
     save_path = os.path.join(UPLOAD_DIR_DOKUMEN, unique_filename)
-    with open(save_path, "wb") as buffer: shutil.copyfileobj(file.file, buffer)
-    
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
     async def event_generator():
-        # Kirim path file permanen ke stream, bukan temporary
-        gen = process_verification_stream(save_path, doc_type, db, user.id, original_filename=file.filename, unique_filename=unique_filename)
-        for update in gen:
-            yield f"data: {json.dumps(update)}\n\n"
-            await asyncio.sleep(0.02)
+        final_result_data = None
+        try:
+            gen = process_verification_stream(save_path, doc_type)
+            for update in gen:
+                if await request.is_disconnected():
+                    # Jika koneksi terputus, picu CancelledError
+                    raise asyncio.CancelledError()
+
+                if update.get("status") == "done":
+                    final_result_data = update.get("data")
+
+                yield f"data: {json.dumps(update)}\n\n"
+                await asyncio.sleep(0.02)
+
+            # >> BLOK PENYIMPANAN KE DATABASE <<
+            if final_result_data:
+                score = final_result_data.get("score", 0)
+                status_dokumen = "DITERIMA" if score >= 70 else "DITOLAK"
+                dokumen_baru = models.Dokumen(
+                    nama_dokumen=file.filename,
+                    nama_file_unik=unique_filename,
+                    tipe_dokumen=doc_type,
+                    status=status_dokumen,
+                    skor=int(score),
+                    hasil_verifikasi=final_result_data.get("results"),
+                    ringkasan=final_result_data.get("summary"),
+                    user_id=user.id
+                )
+                db.add(dokumen_baru)
+                db.commit()
+                print(f"✅ Hasil verifikasi untuk {unique_filename} berhasil disimpan ke DB.")
+
+        except asyncio.CancelledError:
+            # >> BLOK PEMBERSIHAN FILE <<
+            # Berjalan HANYA jika proses dibatalkan.
+            print(f"⚠️ Proses dibatalkan untuk {unique_filename}. File akan dihapus.")
+            if os.path.exists(save_path):
+                os.remove(save_path)
+                print(f"🗑️ File terhapus karena proses dibatalkan: {save_path}")
+        
+        except Exception as e:
+            print(f"Error dalam event_generator: {e}")
+            if os.path.exists(save_path):
+                os.remove(save_path)
+                print(f"🗑️ File terhapus karena error: {save_path}")
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+@app.post("/cancel-verification")
+async def cancel_verification(request: Request, data: dict = Body(...)):
+    """Menerima permintaan dari klien untuk menghapus file yang prosesnya dibatalkan."""
+    filename = data.get("filename")
+    if not filename:
+        raise HTTPException(status_code=400, detail="Nama file tidak disertakan.")
+
+    file_path = os.path.join(UPLOAD_DIR_DOKUMEN, os.path.basename(filename))
+
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"🗑️ File yang dibatalkan telah dihapus: {file_path}")
+            return JSONResponse(content={"status": "success", "message": "File berhasil dihapus."}, status_code=200)
+        else:
+            # Ini bisa terjadi jika pembatalan sangat cepat.
+            print(f"⚠️ File yang akan dibatalkan tidak ditemukan (mungkin sudah dihapus): {file_path}")
+            return JSONResponse(content={"status": "not_found", "message": "File tidak ditemukan."}, status_code=404)
+    except Exception as e:
+        print(f"❌ Gagal menghapus file yang dibatalkan: {e}")
+        raise HTTPException(status_code=500, detail=f"Gagal menghapus file: {e}")
 
 @app.post("/hapus-dokumen/{dokumen_id}")
 async def hapus_dokumen(request: Request, dokumen_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):

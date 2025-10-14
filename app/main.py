@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse,
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from werkzeug.utils import secure_filename
 
 # --- Import untuk Database & Autentikasi ---
 from sqlalchemy.orm import Session
@@ -34,9 +35,10 @@ from .email_utils import send_notification_email, send_register_email, send_pass
 
 # --- Import dari Modul AI & Logika Verifikasi Anda ---
 from .Verifikasi_Fuzzy_Fix import VERIFICATION_TEMPLATES
+from .modules.hybrid_verifier import verify_document_hybrid
 from .modules.page_classifier import classify_page_by_keywords
 from .modules.summarizer import generate_summary
-from .modules.signature_detector import detect_signature
+from .modules.signature_detector import check_signatures_in_pdf 
 from .modules.dl_classifier import predict_page_class
 
 # --- Import Pustaka Tambahan dari ai-fx ---
@@ -155,7 +157,7 @@ def easyocr_extract_text(image_path: str, min_conf: float = 0.25) -> str:
         print(f"Error saat menjalankan OCR pada {image_path}: {e}")
         return ""
 
-def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str) -> List[Dict[str, Any]]:
+def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str, signature_data: Dict[str, str]) -> List[Dict[str, Any]]:
     template = VERIFICATION_TEMPLATES.get(doc_type, [])
     if not template:
         return [{"name": "Error", "status": "TIDAK OK", "keterangan": "Tipe dokumen tidak valid.", "kategori": "Error"}]
@@ -164,31 +166,18 @@ def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str)
     detected_classes = {p['class'] for p in pages_data}
     
     class_map = {
-        "Berita Acara Uji Terima (BAUT)": "BAUT", 
-        "Laporan Hasil Pekerjaan Selesai 100%": "LAPORAN_100%",
-        "Surat Permintaan Uji Terima dari Mitra": "SURAT_PERMINTAAN",
-        "SK/Penunjukan Team Uji Terima": "SK_TEAM",
-        "Nota Dinas Pelaksanaan Uji Terima": "NOTA_DINAS",
-        "Daftar Hadir Uji Terima": "DAFTAR_HADIR_UT",
-        "BA Lapangan": "BA_LAPANGAN",
-        "As-Built Drawing / Red Line Drawing": "RLD",
-        "Bill of Quantity (BoQ) UT": "BOQ_UT",
-        "Laporan Uji Terima": "LAPORAN_UT",
-        "OTDR Report": "OTDR_REPORT",
-        "Form OPM": "FORM_OPM",
-        "Foto Kegiatan Uji Terima": "FOTO_KEGIATAN",
-        "Foto Material terpasang sesuai BOQ": "FOTO_MATERIAL",
-        "Foto Pengukuran OPM": "FOTO_PENGUKURAN_OPM",
-        "Foto Roll Meter / Fault Locator": "FOTO_ROLL_METER",
-        "Tanda Tangan Pejabat Berwenang": "SIGNATURE",
-        "Berita Acara Test Commissioning (BACT)": "BACT",
-        "Daftar Hadir Test Commissioning": "DAFTAR_HADIR_CT",
-        "BOQ CT": "BOQ_CT",
-        "Berita Acara Barang Tiba (BBA)": "BERITA_ACARA_BARANG_TIBA",
-        "Red Line Drawing (RLD)": "RLD",
-        "Foto Dokumentasi Test Comm": "FOTO_KEGIATAN",
-        "Foto Capture Survey Address": "FOTO_SURVEY_ADDRESS",
-        "Tanda Tangan Para Pihak": "SIGNATURE",
+        "Berita Acara Uji Terima (BAUT)": "BAUT", "Laporan Hasil Pekerjaan Selesai 100%": "LAPORAN_100%",
+        "Surat Permintaan Uji Terima dari Mitra": "SURAT_PERMINTAAN", "SK/Penunjukan Team Uji Terima": "SK_TEAM",
+        "Nota Dinas Pelaksanaan Uji Terima": "NOTA_DINAS", "Daftar Hadir Uji Terima": "DAFTAR_HADIR_UT",
+        "BA Lapangan": "BA_LAPANGAN", "As-Built Drawing / Red Line Drawing": "RLD",
+        "Bill of Quantity (BoQ) UT": "BOQ_UT", "Laporan Uji Terima": "LAPORAN_UT", "OTDR Report": "OTDR_REPORT",
+        "Form OPM": "FORM_OPM", "Foto Kegiatan Uji Terima": "FOTO_KEGIATAN",
+        "Foto Material terpasang sesuai BOQ": "FOTO_MATERIAL", "Foto Pengukuran OPM": "FOTO_PENGUKURAN_OPM",
+        "Foto Roll Meter / Fault Locator": "FOTO_ROLL_METER", "Tanda Tangan Pejabat Berwenang": "SIGNATURE",
+        "Berita Acara Test Commissioning (BACT)": "BACT", "Daftar Hadir Test Commissioning": "DAFTAR_HADIR_CT",
+        "BOQ CT": "BOQ_CT", "Berita Acara Barang Tiba (BBA)": "BERITA_ACARA_BARANG_TIBA",
+        "Red Line Drawing (RLD)": "RLD", "Foto Dokumentasi Test Comm": "FOTO_KEGIATAN",
+        "Foto Capture Survey Address": "FOTO_SURVEY_ADDRESS", "Tanda Tangan Para Pihak": "SIGNATURE",
     }
 
     for item in template:
@@ -201,9 +190,10 @@ def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str)
         results.append({"name": name, "status": status, "keterangan": ket, "kategori": kategori})
 
     signature_item_name = "Tanda Tangan Pejabat Berwenang" if doc_type == "VERIFIKASI_BAUT" else "Tanda Tangan Para Pihak"
-    signature_page_found = next((p['page_num'] for p in pages_data if p['class'] in ['BAUT', 'BA_TESTCOMM', 'LAPORAN_UT'] and detect_signature(p['path'])), None)
     
-    ttd_status, ttd_ket = ("OK", f"DITEMUKAN DI HALAMAN {signature_page_found}") if signature_page_found else ("TIDAK OK", "TIDAK DITEMUKAN")
+    # --- LOGIKA TANDA TANGAN DIKEMBALIKAN KE SEMULA ---
+    ttd_status, ttd_ket = ("OK", "DITEMUKAN") if signature_data.get("status") == "Ditemukan" else ("TIDAK OK", "TIDAK DITEMUKAN")
+        
     results.append({"name": signature_item_name, "kategori": "Validasi Akhir", "status": ttd_status, "keterangan": ttd_ket})
     return results
 
@@ -219,6 +209,11 @@ def process_verification_stream(pdf_path: str, doc_type: str):
         total_pages = len(doc)
         yield {"status": "processing", "message": f"📄 Total halaman: {total_pages}", "progress": 5}
         
+        yield {"status": "processing", "message": "🖊️ Mencari tanda tangan...", "progress": 10}
+        # --- UBAH NAMA FUNGSI YANG DIPANGGIL KEMBALI KE check_signatures_in_pdf ---
+        signature_results = check_signatures_in_pdf(pdf_path)
+        yield {"status": "processing", "message": "✅ Pencarian tanda tangan selesai.", "progress": 15}
+
         temp_paths = [os.path.join(temp_dir, f"page_{i}.jpg") for i in range(total_pages)]
         for i, path in enumerate(temp_paths):
             doc.load_page(i).get_pixmap(dpi=200).save(path)
@@ -243,7 +238,9 @@ def process_verification_stream(pdf_path: str, doc_type: str):
             yield {"status": "processing", "message": f"🤖 Menganalisis halaman {i + 1}/{total_pages}...", "progress": progress}
         
         yield {"status": "processing", "message": "🔍 Menyusun hasil akhir...", "progress": 95}
-        results = compare_with_template_smart(pages_data, doc_type)
+        
+        results = compare_with_template_smart(pages_data, doc_type, signature_results)
+        
         all_texts = [p['text'] or easyocr_extract_text(p['path']) for p in pages_data]
         summary = generate_summary(all_texts, [p['class'] for p in pages_data])
         ok = sum(1 for r in results if r["status"] == "OK")
@@ -252,11 +249,6 @@ def process_verification_stream(pdf_path: str, doc_type: str):
         final_data = {"results": results, "score": score, "level": "Good" if score >= 70 else "Perlu Diperiksa", "summary": summary}
         yield {"status": "done", "data": final_data}
 
-    except GeneratorExit:
-        print("Generator dihentikan karena koneksi klien ditutup (dibatalkan).")
-    except Exception as e:
-        print(f"❌ Terjadi Error di stream: {e}")
-        yield {"status": "error", "message": str(e)}
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
         

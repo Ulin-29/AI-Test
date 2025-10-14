@@ -1,49 +1,64 @@
 import cv2
 import numpy as np
+import fitz  # PyMuPDF
 import os
 
-def detect_signature(image_path: str, debug: bool = False) -> bool:
-    if not os.path.exists(image_path):
-        print(f"[ERROR] Signature check: Gambar tidak ditemukan di {image_path}")
-        return False
+def _detect_signature_on_image(image_bytes):
+    """
+    Fungsi internal untuk mendeteksi tanda tangan pada satu gambar.
+    Menerima input berupa bytes gambar.
+    """
     try:
-        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
-        if img is None: return False
-        
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        blurred_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        binary_img = cv2.adaptiveThreshold(blurred_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        
-        contours, _ = cv2.findContours(binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        debug_image = img.copy() if debug else None
-        signature_found = False
+        np_arr = np.frombuffer(image_bytes, np.uint8)
+        image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if image is None:
+            return False
+
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresh = cv2.threshold(blurred, 150, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         for contour in contours:
             area = cv2.contourArea(contour)
-            perimeter = cv2.arcLength(contour, True)
-            
-            if perimeter > 0 and area > 0:
-                complexity = (perimeter ** 2) / area
-                
-                min_area = 1000
-                max_area = 100000
-                min_complexity = 20
-
-                if (min_area < area < max_area) and (complexity > min_complexity):
-                    signature_found = True
-                    if debug:
-                        cv2.drawContours(debug_image, [contour], -1, (0, 255, 0), 3)
-                elif debug:
-                    cv2.drawContours(debug_image, [contour], -1, (0, 0, 255), 2)
-
-        if debug:
-            debug_path = image_path.replace('.jpg', '_debug.jpg')
-            cv2.imwrite(debug_path, debug_image)
-            print(f"✅ Gambar debug disimpan di: {debug_path}")
-
-        return signature_found
-        
-    except Exception as e:
-        print(f"[ERROR] Gagal deteksi tanda tangan: {e}")
+            x, y, w, h = cv2.boundingRect(contour)
+            if area > 500 and w > 0 and h > 0 and (w / h) > 1.5:
+                return True
         return False
+    except Exception:
+        return False
+
+def check_signatures_in_pdf(pdf_path: str):
+    """
+    Fungsi utama untuk memeriksa keberadaan tanda tangan dalam seluruh file PDF.
+    Berhenti setelah tanda tangan pertama ditemukan.
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        found_signature = False
+
+        for page_num in range(len(doc)):
+            page = doc.load_page(page_num)
+            pix = page.get_pixmap(dpi=150)
+            image_bytes = pix.tobytes("png")
+            
+            if _detect_signature_on_image(image_bytes):
+                found_signature = True
+                break  # Hentikan pencarian jika sudah ditemukan
+        doc.close()
+
+        if found_signature:
+            return {"status": "Ditemukan"}
+        else:
+            return {"status": "Tidak Ditemukan"}
+    except Exception as e:
+        return {"status": "Error", "message": f"Gagal memproses PDF: {str(e)}"}
+
+# Ganti nama fungsi di __main__ untuk konsistensi
+if __name__ == '__main__':
+    test_pdf_path = 'path/ke/dokumen_anda.pdf'
+    if os.path.exists(test_pdf_path):
+        result = check_signatures_in_pdf(test_pdf_path)
+        print(f"Hasil pengecekan tanda tangan: {result}")
+    else:
+        print(f"File tidak ditemukan: {test_pdf_path}")

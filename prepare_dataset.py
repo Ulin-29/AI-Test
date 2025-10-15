@@ -5,15 +5,10 @@ import cv2
 import numpy as np
 
 # --- Konfigurasi ---
-# Folder sumber berisi sub-folder kategori dengan PDF
 PDF_SOURCE_DIR = 'pdf_sources'
-
-# Folder tujuan untuk menyimpan gambar hasil konversi
 DATASET_DIR = 'dataset'
-
-# Kualitas gambar (dots per inch) untuk hasil detail lebih baik
-DPI = 300
-
+# --- [PENINGKATAN] DPI dinaikkan untuk gambar yang lebih detail ---
+DPI = 350
 
 def preprocess_image(pix):
     """
@@ -23,11 +18,17 @@ def preprocess_image(pix):
     img_np = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
 
     # 2. Konversi ke grayscale (skala abu-abu)
-    gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    if img_np.shape[2] == 3: # Cek jika gambar RGB
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    else:
+        gray_image = img_np
 
-    # 3. Terapkan Adaptive Thresholding untuk membuat gambar hitam-putih yang tajam
+    # 3. Menghilangkan noise/bintik kecil pada gambar ---
+    denoised_image = cv2.fastNlMeansDenoising(gray_image, h=10, templateWindowSize=7, searchWindowSize=21)
+
+    # 4. Terapkan Adaptive Thresholding untuk membuat gambar hitam-putih yang tajam
     processed_image = cv2.adaptiveThreshold(
-        gray_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        denoised_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY, 11, 2
     )
 

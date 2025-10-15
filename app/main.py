@@ -35,11 +35,11 @@ from .email_utils import send_notification_email, send_register_email, send_pass
 
 # --- Import dari Modul AI & Logika Verifikasi Anda ---
 from .Verifikasi_Fuzzy_Fix import VERIFICATION_TEMPLATES
-from .modules.hybrid_verifier import verify_document_hybrid
+from .modules.dl_classifier import predict_page_class
 from .modules.page_classifier import classify_page_by_keywords
 from .modules.summarizer import generate_summary
 from .modules.signature_detector import check_signatures_in_pdf 
-from .modules.dl_classifier import predict_page_class
+
 
 # --- Import Pustaka Tambahan dari ai-fx ---
 from user_agents import parse
@@ -143,7 +143,7 @@ def get_easyocr_reader(langs: List[str] = ['id', 'en'], force_gpu: bool = None):
     
     use_gpu = (TORCH_AVAILABLE and torch.cuda.is_available()) if force_gpu is None else force_gpu
     _easy_reader = easyocr.Reader(langs, gpu=use_gpu, verbose=False)
-    print(f"✅ EasyOCR initialized | GPU={'Aktif' if use_gpu else 'Tidak Aktif (CPU Mode)'}")
+    print(f"✅ GPU={'Aktif' if use_gpu else 'Tidak Aktif (CPU Mode)'}")
     return _easy_reader
 
 def easyocr_extract_text(image_path: str, min_conf: float = 0.25) -> str:
@@ -191,7 +191,6 @@ def compare_with_template_smart(pages_data: List[Dict[str, Any]], doc_type: str,
 
     signature_item_name = "Tanda Tangan Pejabat Berwenang" if doc_type == "VERIFIKASI_BAUT" else "Tanda Tangan Para Pihak"
     
-    # --- LOGIKA TANDA TANGAN DIKEMBALIKAN KE SEMULA ---
     ttd_status, ttd_ket = ("OK", "DITEMUKAN") if signature_data.get("status") == "Ditemukan" else ("TIDAK OK", "TIDAK DITEMUKAN")
         
     results.append({"name": signature_item_name, "kategori": "Validasi Akhir", "status": ttd_status, "keterangan": ttd_ket})
@@ -201,29 +200,26 @@ def process_verification_stream(pdf_path: str, doc_type: str):
     if not os.path.exists(pdf_path):
         yield {"status": "error", "message": "File tidak ditemukan"}
         return
-    
+
     temp_dir = tempfile.mkdtemp()
     try:
         yield {"status": "processing", "message": "🚀 Membuka PDF...", "progress": 0}
         doc = fitz.open(pdf_path)
         total_pages = len(doc)
         yield {"status": "processing", "message": f"📄 Total halaman: {total_pages}", "progress": 5}
-        
-        yield {"status": "processing", "message": "🖊️ Mencari tanda tangan...", "progress": 10}
-        # --- UBAH NAMA FUNGSI YANG DIPANGGIL KEMBALI KE check_signatures_in_pdf ---
+
         signature_results = check_signatures_in_pdf(pdf_path)
-        yield {"status": "processing", "message": "✅ Pencarian tanda tangan selesai.", "progress": 15}
 
         temp_paths = [os.path.join(temp_dir, f"page_{i}.jpg") for i in range(total_pages)]
         for i, path in enumerate(temp_paths):
             doc.load_page(i).get_pixmap(dpi=200).save(path)
         doc.close()
-        yield {"status": "processing", "message": "✅ PDF selesai dikonversi.", "progress": 20}
+        yield {"status": "processing", "message": "✅ PDF selesai dikonversi.", "progress": 10}
 
         def _classify_hybrid(path, index):
             p_class_dl, confidence = predict_page_class(path)
             text, p_class, p_class_kw = "", p_class_dl, "-"
-            if confidence <= 0.75:
+            if confidence <= 0.80:
                 text = easyocr_extract_text(path)
                 p_class_kw = classify_page_by_keywords(text)
                 if p_class_kw != "UNKNOWN": p_class = p_class_kw

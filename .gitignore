@@ -20,7 +20,7 @@ database.db
 
 # 🤖 Data, Dataset, dan Model AI
 pdf_sources/
-datasets/
+dataset/
 datasets_images/
 *.h5
 *.pkl

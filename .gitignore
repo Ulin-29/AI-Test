@@ -25,7 +25,10 @@ datasets_images/
 *.h5
 *.pkl
 *.pt
+document_classifier_model.keras
+class_names.json
 hasil_pelatihan.png
+hasil_*.png
 
 # ⚙️ File sementara / upload
 temp_uploads/

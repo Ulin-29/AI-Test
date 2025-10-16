@@ -230,7 +230,26 @@ def process_verification_stream(pdf_path: str, doc_type: str):
             page_info = _classify_hybrid(path, i)
             pages_data.append(page_info)
             progress = int((((i + 1) / total_pages) * 70) + 20)
-            print(f"Analisis Halaman {page_info['page_num']}/{total_pages} -> Keputusan Final: {page_info['class']}")
+            
+            # --- [PERUBAHAN LOGGING TERMINAL] ---
+            ai_prediction = page_info['ai_class']
+            keyword_prediction = page_info['keyword_class']
+            final_decision = page_info['class']
+            page_num = page_info['page_num']
+
+            header = f"📄 Analisis Halaman {page_num}/{total_pages} "
+            separator = "=" * len(header)
+            
+            print(f"\n{header}\n{separator}")
+            print(f"{'AI Prediction':<16}: {ai_prediction}")
+
+            # Hanya tampilkan baris Keyword Result jika memang ada hasilnya
+            if keyword_prediction != "-":
+                print(f"{'Keyword Result':<16}: {keyword_prediction}")
+
+            print(f"{'Keputusan Final':<16}: {final_decision}")
+            # --- [AKHIR PERUBAHAN LOGGING TERMINAL] ---
+
             yield {"status": "processing", "message": f"🤖 Menganalisis halaman {i + 1}/{total_pages}...", "progress": progress}
         
         yield {"status": "processing", "message": "🔍 Menyusun hasil akhir...", "progress": 95}
@@ -244,7 +263,7 @@ def process_verification_stream(pdf_path: str, doc_type: str):
         
         final_data = {"results": results, "score": score, "level": "Good" if score >= 70 else "Perlu Diperiksa", "summary": summary}
         yield {"status": "done", "data": final_data}
-
+ 
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
         
